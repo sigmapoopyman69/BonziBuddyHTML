@@ -5,76 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bonzi Buddy World</title>
     <style>
-        /* Reset and background */
         body {
             margin: 0;
             padding: 0;
             background-color: #a370cc; /* Classic Bonzi purple background */
             font-family: "MS Sans Serif", Geneva, sans-serif;
-            overflow: hidden; /* Prevents scrollbars when images pop up */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             height: 100vh;
-            width: 100vw;
-            user-select: none; /* Prevents text highlighting while dragging */
-        }
-
-        /* Bonzi Buddy Fixed Window */
-        #bonzi-window {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 250px;
-            background: #f1eae1;
-            border: 2px solid #000;
-            box-shadow: 3px 3px 0px #808080;
-            padding: 10px;
-            z-index: 9999; /* Keeps Bonzi on top of everything */
+            color: white;
             text-align: center;
         }
 
-        /* Draggable Header Title Bar */
-        .window-header {
-            background: linear-gradient(to right, #000080, #1084d0);
-            color: white;
-            padding: 3px 6px;
+        /* Retro Activation Button */
+        #start-btn {
+            background: #d4d0c8;
+            border-top: 2px solid #fff;
+            border-left: 2px solid #fff;
+            border-right: 2px solid #404040;
+            border-bottom: 2px solid #404040;
+            color: #000;
+            padding: 10px 20px;
+            font-size: 16px;
             font-weight: bold;
-            font-size: 12px;
-            text-align: left;
-            margin-bottom: 10px;
-            cursor: move; /* Shows movement cursor */
+            cursor: pointer;
+            box-shadow: 2px 2px 0px #000;
         }
 
-        #bonzi-sprite {
-            width: 120px;
-            height: auto;
-            pointer-events: none; /* Prevents ghost-dragging the image itself */
+        #start-btn:active {
+            border-top: 2px solid #404040;
+            border-left: 2px solid #404040;
+            border-right: 2px solid #fff;
+            border-bottom: 2px solid #fff;
         }
 
-        /* Popup Image Styling */
-        .popup-image {
-            position: absolute;
-            max-width: 200px;
-            max-height: 200px;
-            animation: popIn 0.3s ease-out;
-            z-index: 10;
-        }
-
-        @keyframes popIn {
-            0% { transform: scale(0); }
-            100% { transform: scale(1); }
+        p {
+            max-width: 400px;
+            line-height: 1.5;
         }
     </style>
 </head>
 <body>
 
-    <!-- Bonzi Buddy Draggable Window -->
-    <div id="bonzi-window">
-        <div class="window-header" id="bonzi-header">BonziBUDDY</div>
-        <img id="bonzi-sprite" src="images (6).jpeg" alt="Bonzi Buddy">
-        <p id="bonzi-dialogue">Hello! I am your companion. Drag me anywhere!</p>
-    </div>
+    <h1>Bonzi Buddy Bouncer</h1>
+    <p>Click the button below to start. Ensure you click <b>"Always Allow Popups"</b> in your browser address bar!</p>
+    <button id="start-btn" onclick="initializeBonziSystem()">ACTIVATE BONZI</button>
 
     <script>
-        // 1. Array of your exact uploaded image filenames
+        // Array of your exact uploaded image filenames
         const imagePool = [
             'IMG_3879-210x280.jpeg',
             'geometry-dash-grief.gif',
@@ -82,73 +62,124 @@
             'unnamed.jpg'
         ];
 
-        // 2. Drag and Drop Logic for Bonzi Window
-        const bonziWindow = document.getElementById("bonzi-window");
-        const bonziHeader = document.getElementById("bonzi-header");
+        const bonziImage = 'images (6).jpeg';
 
-        let isDragging = false;
-        let startX, startY, initialLeft, initialTop;
+        function initializeBonziSystem() {
+            document.getElementById('start-btn').style.display = 'none';
 
-        bonziHeader.addEventListener("mousedown", (e) => {
-            isDragging = true;
+            // 1. Spawn fixed Bonzi Window in the bottom right corner
+            const screenWidth = window.screen.availWidth;
+            const screenHeight = window.screen.availHeight;
             
-            // Get initial click position
-            startX = e.clientX;
-            startY = e.clientY;
+            const bWidth = 280;
+            const bHeight = 250;
+            const bLeft = screenWidth - bWidth - 20;
+            const bTop = screenHeight - bHeight - 60;
 
-            // Get current positional styling of the window
-            const rect = bonziWindow.getBoundingClientRect();
-            initialLeft = rect.left;
-            initialTop = rect.top;
+            const bonziWindow = window.open("", "BonziBuddyWindow", `width=${bWidth},height=${bHeight},left=${bLeft},top=${bTop},resizable=yes,scrollbars=no,status=no,toolbar=no,menubar=no`);
+            
+            if (bonziWindow) {
+                bonziWindow.document.write(`
+                    <html>
+                    <head>
+                        <title>BonziBUDDY</title>
+                        <style>
+                            body { background: #f1eae1; margin: 0; padding: 10px; font-family: sans-serif; text-align: center; overflow: hidden; }
+                            img { width: 120px; height: auto; }
+                            p { font-size: 13px; color: #000; margin-top: 10px; }
+                        </style>
+                    </head>
+                    <body>
+                        <img src="${bonziImage}" alt="Bonzi">
+                        <p>Hello! Watch the windows bounce!</p>
+                    </body>
+                    </html>
+                `);
+            }
 
-            // Switch layout from fixed 'bottom/right' to absolute coordinates during drag
-            bonziWindow.style.bottom = "auto";
-            bonziWindow.style.right = "auto";
-            bonziWindow.style.left = `${initialLeft}px`;
-            bonziWindow.style.top = `${initialTop}px`;
-        });
+            // 2. Start looping the bouncing actual popup windows every 4 seconds
+            setInterval(spawnBouncingPopup, 500);
+        }
 
-        document.addEventListener("mousemove", (e) => {
-            if (!isDragging) return;
-
-            // Calculate how far the mouse has moved
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-
-            // Move the window to the new position
-            bonziWindow.style.left = `${initialLeft + dx}px`;
-            bonziWindow.style.top = `${initialTop + dy}px`;
-        });
-
-        document.addEventListener("mouseup", () => {
-            isDragging = false;
-        });
-
-
-        // 3. Function to spawn a random image
-        function spawnRandomImage() {
+        function spawnBouncingPopup() {
             if (imagePool.length === 0) return;
 
-            const img = document.createElement('img');
-            const randomSrc = imagePool[Math.floor(Math.random() * imagePool.length)];
+            const randomImgSrc = imagePool[Math.floor(Math.random() * imagePool.length)];
+
+            // Set fixed dimensions for calculating screen safety bounds
+            const wWidth = 300; 
+            const wHeight = 300;
             
-            img.src = randomSrc;
-            img.classList.add('popup-image');
+            // Screen boundaries
+            const maxLeft = window.screen.availWidth - wWidth;
+            const maxTop = window.screen.availHeight - wHeight;
+            
+            // Start positions randomly on screen
+            let currentX = Math.floor(Math.random() * maxLeft);
+            let currentY = Math.floor(Math.random() * maxTop);
 
-            // Calculate random coordinates inside the viewport boundaries
-            const maxX = window.innerWidth - 200;
-            const maxY = window.innerHeight - 200;
+            // Vector Speeds (DVD style steps). Mixed positives and negatives for random directions
+            const speeds = [-5, -3, 3, 5];
+            let dx = speeds[Math.floor(Math.random() * speeds.length)];
+            let dy = speeds[Math.floor(Math.random() * speeds.length)];
 
-            const randomX = Math.max(0, Math.floor(Math.random() * maxX));
-            const randomY = Math.max(0, Math.floor(Math.random() * maxY));
+            // Open popup
+            const winPopup = window.open("", "_blank", `width=${wWidth},height=${wHeight},left=${currentX},top=${currentY},resizable=yes,scrollbars=no,status=no,toolbar=no,menubar=no`);
 
-            img.style.left = `${randomX}px`;
-            img.style.top = `${randomY}px`;
+            if (winPopup) {
+                winPopup.document.write(`
+                    <html>
+                    <head>
+                        <title>DVD Mode</title>
+                        <style>
+                            body { margin: 0; padding: 0; background: #000; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+                            img { max-width: 100%; max-height: 100%; object-fit: contain; }
+                        </style>
+                    </head>
+                    <body>
+                        <img src="${randomImgSrc}" alt="Popup">
+                    </body>
+                    </html>
+                `);
 
-            document.body.appendChild(img);
+                // Core Physics Animation Loop
+                const bounceInterval = setInterval(() => {
+                    // Check if user manually shut the popup window to clear resource loops
+                    if (winPopup.closed) {
+                        clearInterval(bounceInterval);
+                        return;
+                    }
 
-        // Spawn a new image every 3 seconds
-        setInterval(spawnRandomImage, 50);
+                    // Move coordinate mapping variables
+                    currentX += dx;
+                    currentY += dy;
+
+                    // Bounce Check Horizontal limits
+                    if (currentX <= 0) {
+                        currentX = 0;
+                        dx = -dx;
+                    } else if (currentX >= maxLeft) {
+                        currentX = maxLeft;
+                        dx = -dx;
+                    }
+
+                    // Bounce Check Vertical limits
+                    if (currentY <= 0) {
+                        currentY = 0;
+                        dy = -dy;
+                    } else if (currentY >= maxTop) {
+                        currentY = maxTop;
+                        dy = -dy;
+                    }
+
+                    // Push the window update directly to the OS view layer
+                    winPopup.moveTo(currentX, currentY);
+
+                }, 30); // Refreshes movement frames roughly every ~30 milliseconds
+
+                // Auto Close tracking frame after 12 seconds to prevent screen clogs
+            }
+        }
     </script>
 </body>
 </html>
